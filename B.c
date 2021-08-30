@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 /* Preenchendo as informacoes de identificacao do remoto */
   ladoCliB.sin_family 	    = AF_INET;
   ladoCliB.sin_addr.s_addr  = inet_addr("127.0.0.1");
-  ladoCliB.sin_port 	      = htons(atoi(5000));
+  ladoCliB.sin_port 	      = htons(5000);
 
 /* Preenchendo as informacoes de identificacao do cliente */
   ladoServA.sin_family 	    = AF_INET;
@@ -48,12 +48,23 @@ int main(int argc, char *argv[]) {
 /* Depois do bind, sd faz referencia a protocolo local, ip local e porta local */
   rc = bind(sd, (struct sockaddr *) &ladoCliB, sizeof(ladoCliB));
   if(rc<0) {
-    printf("%s: n�o pode fazer um bind da porta\n", argv[0]);
+    printf("5000: n�o pode fazer um bind da porta\n");
     exit(1); }
-  printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: %s, Porta_R: 4000}\n", inet_ntoa(ladoCliB.sin_addr), ntohs(ladoCliB.sin_port), "127.0.0.1");
+  printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: 127.0.0.1, Porta_R: 4000}\n", inet_ntoa(ladoCliB.sin_addr), ntohs(ladoCliB.sin_port));
 
-  /* Enviando um pacote para cada parametro informado */
-  for(i=3;i<argc;i++) {
+  
+	/* inicia o buffer */
+  memset(msg,0x0,MAX_MSG);
+  tam_ServA = sizeof(ladoServA);
+  /* recebe a mensagem  */
+  n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServA, &tam_ServA);
+    
+  /* imprime a mensagem recebida na tela do usuario */
+  printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServA.sin_addr), ntohs(ladoServA.sin_port));
+  printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliB.sin_addr), ntohs(ladoCliB.sin_port), msg);
+
+	/* Enviando um pacote para cada parametro informado */
+  for(i=1;i<argc;i++) {
     rc = sendto(sd, argv[i], strlen(argv[i]), 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
     if(rc<0) {
       printf("%s: nao pode enviar dados %d \n",argv[0],i-1);
@@ -62,18 +73,7 @@ int main(int argc, char *argv[]) {
     printf("Enviando parametro %d: %s\n", i-2, argv[i]);
   } /* fim do for (laco) */
 
-  /* inicia o buffer */
-  memset(msg,0x0,MAX_MSG);
-  tam_ServA = sizeof(ladoServA);
-  /* recebe a mensagem  */
-  n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServA, &tam_ServA);
-  if(n<0) {
-    printf("%s: nao pode receber dados \n",argv[0]);
-  	continue;} 
-    
-  /* imprime a mensagem recebida na tela do usuario */
-  printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServA.sin_addr), ntohs(ladoServA.sin_port));
-  printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliB.sin_addr), ntohs(ladoCliB.sin_port), msg);
+  
 
   return 1;
 } /* fim do programa */

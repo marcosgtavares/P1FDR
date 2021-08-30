@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 /* Preenchendo as informacoes de identificacao do remoto */
   ladoServB.sin_family 	   = AF_INET;
   ladoServB.sin_addr.s_addr = inet_addr("127.0.0.1");
-  ladoServB.sin_port 	     = htons(atoi(5000));
+  ladoServB.sin_port 	     = htons(5000);
 
 /* Preenchendo as informacoes de identificacao do cliente */
   ladoCliA.sin_family 	     = AF_INET;
@@ -50,10 +50,10 @@ int main(int argc, char *argv[]) {
   if(rc<0) {
     printf("%s: n�o pode fazer um bind da porta\n", argv[0]);
     exit(1); }
-  printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: %s, Porta_R: 5000}\n", inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port), "127.0.0.1");
+  printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: 127.0.0.1, Porta_R: 5000}\n", inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port));
 
   /* Enviando um pacote para cada parametro informado */
-  for(i=3;i<argc;i++) {
+  for(i=1;i<argc;i++) {
     rc = sendto(sd, argv[i], strlen(argv[i]), 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
     if(rc<0) {
       printf("%s: nao pode enviar dados %d \n",argv[0],i-1);
@@ -67,9 +67,6 @@ int main(int argc, char *argv[]) {
   tam_ServB = sizeof(ladoServB);
   /* recebe a mensagem  */
   n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
-  if(n<0) {
-    printf("%s: nao pode receber dados \n",argv[0]);
-    continue;} 
     
   /* imprime a mensagem recebida na tela do usuario */
   printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServB.sin_addr), ntohs(ladoServB.sin_port));
