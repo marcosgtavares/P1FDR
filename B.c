@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 			while(!fileended) { //
 				framefile //numero tambem(1,2,3,4 ...)
 				//sendframe
-				rc = sendto(sd, argv[i], strlen(argv[i]), 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
+				rc = sendto(sd, framedfile, strlen(framedfile), 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
 				if(rc<0) {
 					printf("%s: nao pode enviar dados %d \n",argv[0],i-1);
 					close(sd);
@@ -76,9 +76,9 @@ int main(int argc, char *argv[]) {
 			while(1){
 				/* inicia o buffer */
 				memset(msg,0x0,MAX_MSG);
-				tam_ServB = sizeof(ladoServB);
+				tam_ServA = sizeof(ladoServA);
 				/* recebe a mensagem  */
-				n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
+				n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServA, &tam_ServA);
 				if(crc){
 					if(notreadyet){
 						addtofile
@@ -93,8 +93,8 @@ int main(int argc, char *argv[]) {
 				}
 				
 				/* imprime a mensagem recebida na tela do usuario */
-				printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServB.sin_addr), ntohs(ladoServB.sin_port));
-				printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port), msg);
+				printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServA.sin_addr), ntohs(ladoServA.sin_port));
+				printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliB.sin_addr), ntohs(ladoCliB.sin_port), msg);
 			}
 		
 		}

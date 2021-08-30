@@ -14,6 +14,6 @@ struct msgform {
 int criar_fila(int MSGKEY);
 int abrir_fila(int MSGKEY);
 void mandar_arquivo(char *file, int msgid);
-void receber_arquivo(struct msgform *msg, int msgid);
+int receber_arquivo(struct msgform *msg, int msgid);
 
 #endif

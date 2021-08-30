@@ -32,9 +32,7 @@ void mandar_arquivo(char *file, int msgid){
     }
 }
 
-void receber_arquivo(struct msgform *msg, int msgid){
-    if (msgrcv(msgid, msg, MSG_SIZEMAX,2, 0) == -1) {
-        perror("Erro na recepcao da mensagem") ;
-    }
+int receber_arquivo(struct msgform *msg, int msgid){
+    return msgrcv(msgid, msg, MSG_SIZEMAX,2, IPC_NOWAIT);
     
 }
