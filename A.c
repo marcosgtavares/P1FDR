@@ -52,25 +52,56 @@ int main(int argc, char *argv[]) {
     exit(1); }
   printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: 127.0.0.1, Porta_R: 5000}\n", inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port));
 
-  /* Enviando um pacote para cada parametro informado */
-  for(i=1;i<argc;i++) {
-    rc = sendto(sd, argv[i], strlen(argv[i]), 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
-    if(rc<0) {
-      printf("%s: nao pode enviar dados %d \n",argv[0],i-1);
-      close(sd);
-      exit(1); }
-    printf("Enviando parametro %d: %s\n", i-2, argv[i]);
-  } /* fim do for (laco) */
 
-  /* inicia o buffer */
-  memset(msg,0x0,MAX_MSG);
-  tam_ServB = sizeof(ladoServB);
-  /* recebe a mensagem  */
-  n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
-    
-  /* imprime a mensagem recebida na tela do usuario */
-  printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServB.sin_addr), ntohs(ladoServB.sin_port));
-  printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port), msg);
+	while(1){
+		if(fila>0){
+			getfileonline
+			while(!fileended) { //
+				framefile //numero tambem(1,2,3,4 ...)
+				//sendframe
+				rc = sendto(sd, argv[i], strlen(argv[i]), 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
+				if(rc<0) {
+					printf("%s: nao pode enviar dados %d \n",argv[0],i-1);
+					close(sd);
+					exit(1); }
+				printf("Enviando parametro %d: %s\n", i-2, argv[i]);
+				if(ackintime){
+					frame++
+					if(endfile){
+						--fila
+					}
+				}
+			} /* fim do for (laco) */
+		}
+		else{
+			while(1){
+				/* inicia o buffer */
+				memset(msg,0x0,MAX_MSG);
+				tam_ServB = sizeof(ladoServB);
+				/* recebe a mensagem  */
+				n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
+				if(crc){
+					if(notreadyet){
+						addtofile
+						sendack
+						if(msg == endfile || msg == lastfile){
+							sendfilen-1
+						}
+						if(msg == lastfile){ //se o frame tiver indicador de fim de arquivo
+							break;
+						}
+					}
+				}
+				
+				/* imprime a mensagem recebida na tela do usuario */
+				printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServB.sin_addr), ntohs(ladoServB.sin_port));
+				printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port), msg);
+			}
+		
+		}
+	}
+  
+  
 
   return 1;
 } /* fim do programa */
