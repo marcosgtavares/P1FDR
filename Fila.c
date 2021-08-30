@@ -25,7 +25,7 @@ void mandar_arquivo(char *file, int msgid){
 	msg.mtype = 2;
     strcpy(msg.mdata, file);
 
-    printf("%s",msg.mdata);
+    printf("Arquivo enviado: %s",msg.mdata);
 
     if (msgsnd(msgid, &msg, MSG_SIZEMAX, 0) == -1) {
         printf("Erro no envio da mensagem") ;

@@ -1,58 +1,30 @@
 //REF:https://www.dca.ufrn.br/~adelardo/cursos/DCA409/node117.html
-
-#include <errno.h>
+#include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <unistd.h>
-#include <string.h>
-
-#define MSGKEY     13 
-
-struct msgform {
-     long     mtype;
-     int      pid;
-     char     *mdata;
-} ;
+#include "Fila.h"
 
 
 int main(int argc, char *argv[]) {
-	struct msgform msg;    
-	int msgid;  
+	struct msgform *msg = (struct msgform*)malloc(sizeof(struct msgform));    
+	int msgidAN,msgidANmin1;  
+	char mensagem[4900];
 
-	int fd = fopen("/A.c", "r");
+	msgidAN = abrir_fila(20);
+	msgidANmin1 = criar_fila(22);
 
-	char buf[4096];
-  ssize_t n;
-  size_t len = 0;
-  while (n = read(STDIN_FILENO, buf, sizeof buf)){
-    if (n < 0) {
-			if (errno == EAGAIN){
-				continue;
-				perror("read");
-				break;
-			}
-			str = realloc(msg.mdata, len + n + 1);
-			memcpy(msg.mdata + len, buf, n);
-			len += n;
-			str[len] = '\0';
-    }
-}
-	/*  recuperacao do id da fila de mensagens do servidor       */
-	if ((msgid = msgget(MSGKEY,0)) == -1) {
-    printf("Erro na criacao da fila do servidor");
-    exit(1);
-  }
+	while(1){
+		if(receber_arquivo(msg, msgidANmin1)!=-1){
+			printf("Arquivo recebido:%s\n", (*msg).mdata);
+		}
+		else{
+			scanf("%s", mensagem);
+			mandar_arquivo(mensagem, msgidAN);
+		}
+		
+	}
 
-	msg.mdata = malloc(sizeof(char)*)
-	msg.pid = getpid();
-	msg.mtype = TYPE_CLIENT;
+	
 
-	if (msgsnd(msgid, &msg, len, 0) == -1) {
-    printf("Erro no envio da mensagem") ;
-    exit(1) ;
-  }
 
 	return 0;
 }
