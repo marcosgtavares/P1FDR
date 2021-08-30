@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <string.h> /* memset() */
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include "Fila.h"
 
@@ -48,6 +49,10 @@ int main(int argc, char *argv[]) {
 
 /* Relacionando o socket sd com a estrutura ladoCliA /*
 /* Depois do bind, sd faz referencia a protocolo local, ip local e porta local */
+	struct timeval tv;
+	tv.tv_sec = 1;
+	setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv))
+
   rc = bind(sd, (struct sockaddr *) &ladoCliA, sizeof(ladoCliA));
   if(rc<0) {
     printf("%s: n�o pode fazer um bind da porta\n", argv[0]);
@@ -62,6 +67,7 @@ int main(int argc, char *argv[]) {
 	int j=0;
 	int k=0;
 	int fileended=0;
+	
 
 	while(1){
 		if(receber_arquivo(msgfila, msgidAN)!=-1){
