@@ -15,9 +15,9 @@
 #define MAX_MSG 100
 
 int main(int argc, char *argv[]) {
-  int sd, rc, i, n, tam_Cli;
-  struct sockaddr_in ladoCli;   /* dados do cliente local   */
-  struct sockaddr_in ladoServ; 	/* dados do servidor remoto */
+  int sd, rc, i, n, tam_ServB;
+  struct sockaddr_in ladoCliA;   /* dados do cliente local   */
+  struct sockaddr_in ladoServB; 	/* dados do servidor remoto */
 
   char   msg[MAX_MSG];/* Buffer que armazena os dados que chegaram via rede */
 
@@ -27,14 +27,14 @@ int main(int argc, char *argv[]) {
     exit(1);  }
 
 /* Preenchendo as informacoes de identificacao do remoto */
-  ladoServ.sin_family 	   = AF_INET;
-  ladoServ.sin_addr.s_addr = inet_addr("127.0.0.1");
-  ladoServ.sin_port 	     = htons(atoi(5000));
+  ladoServB.sin_family 	   = AF_INET;
+  ladoServB.sin_addr.s_addr = inet_addr("127.0.0.1");
+  ladoServB.sin_port 	     = htons(atoi(5000));
 
 /* Preenchendo as informacoes de identificacao do cliente */
-  ladoCli.sin_family 	     = AF_INET;
-  ladoCli.sin_addr.s_addr  = inet_addr("127.0.0.1");  
-  ladoCli.sin_port 	       = htons(4000); 
+  ladoCliA.sin_family 	     = AF_INET;
+  ladoCliA.sin_addr.s_addr  = inet_addr("127.0.0.1");  
+  ladoCliA.sin_port 	       = htons(4000); 
 
 /* Criando um socket. Nesse momento a variavel       */
 /* sd contem apenas dados sobre familia e protocolo  */
@@ -44,17 +44,17 @@ int main(int argc, char *argv[]) {
     printf("%s: n�o pode abrir o socket \n",argv[0]);
     exit(1); }
 
-/* Relacionando o socket sd com a estrutura ladoCli /*
+/* Relacionando o socket sd com a estrutura ladoCliA /*
 /* Depois do bind, sd faz referencia a protocolo local, ip local e porta local */
-  rc = bind(sd, (struct sockaddr *) &ladoCli, sizeof(ladoCli));
+  rc = bind(sd, (struct sockaddr *) &ladoCliA, sizeof(ladoCliA));
   if(rc<0) {
     printf("%s: n�o pode fazer um bind da porta\n", argv[0]);
     exit(1); }
-  printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: %s, Porta_R: 5000}\n", inet_ntoa(ladoCli.sin_addr), ntohs(ladoCli.sin_port), "127.0.0.1");
+  printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: %s, Porta_R: 5000}\n", inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port), "127.0.0.1");
 
   /* Enviando um pacote para cada parametro informado */
   for(i=3;i<argc;i++) {
-    rc = sendto(sd, argv[i], strlen(argv[i]), 0,(struct sockaddr *) &ladoServ, sizeof(ladoServ));
+    rc = sendto(sd, argv[i], strlen(argv[i]), 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
     if(rc<0) {
       printf("%s: nao pode enviar dados %d \n",argv[0],i-1);
       close(sd);
@@ -63,17 +63,17 @@ int main(int argc, char *argv[]) {
   } /* fim do for (laco) */
 
   /* inicia o buffer */
-    memset(msg,0x0,MAX_MSG);
-    tam_Cli = sizeof(ladoCli);
-    /* recebe a mensagem  */
-    n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoCli, &tam_Cli);
-    if(n<0) {
-      printf("%s: nao pode receber dados \n",argv[0]);
-      continue;} 
-      
-    /* imprime a mensagem recebida na tela do usuario */
-    printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServ.sin_addr), ntohs(ladoServ.sin_port));
-    printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCli.sin_addr), ntohs(ladoCli.sin_port), msg);
+  memset(msg,0x0,MAX_MSG);
+  tam_ServB = sizeof(ladoServB);
+  /* recebe a mensagem  */
+  n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
+  if(n<0) {
+    printf("%s: nao pode receber dados \n",argv[0]);
+    continue;} 
+    
+  /* imprime a mensagem recebida na tela do usuario */
+  printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServB.sin_addr), ntohs(ladoServB.sin_port));
+  printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port), msg);
 
   return 1;
 } /* fim do programa */
