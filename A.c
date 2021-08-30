@@ -15,10 +15,12 @@
 #define MAX_MSG 100
 
 int main(int argc, char *argv[]) {
-  int sd, rc, i;
+  int sd, rc, i, n, tam_Cli;
   struct sockaddr_in ladoCli;   /* dados do cliente local   */
   struct sockaddr_in ladoServ; 	/* dados do servidor remoto */
-  
+
+  char   msg[MAX_MSG];/* Buffer que armazena os dados que chegaram via rede */
+
 /* confere o numero de argumentos passados para o programa */
   if(argc<3)  {
     printf("uso correto: %s <ip_do_servidor> <porta_do_servidor> <dado1> ... <dadoN> \n", argv[0]);
@@ -27,12 +29,12 @@ int main(int argc, char *argv[]) {
 /* Preenchendo as informacoes de identificacao do remoto */
   ladoServ.sin_family 	   = AF_INET;
   ladoServ.sin_addr.s_addr = inet_addr("127.0.0.1");
-  ladoServ.sin_port 	   = htons(atoi(5000));
+  ladoServ.sin_port 	     = htons(atoi(5000));
 
 /* Preenchendo as informacoes de identificacao do cliente */
-  ladoCli.sin_family 	 = AF_INET;
-  ladoCli.sin_addr.s_addr= inet_addr("127.0.0.1");  
-  ladoCli.sin_port 	     = htons(4000); 
+  ladoCli.sin_family 	     = AF_INET;
+  ladoCli.sin_addr.s_addr  = inet_addr("127.0.0.1");  
+  ladoCli.sin_port 	       = htons(4000); 
 
 /* Criando um socket. Nesse momento a variavel       */
 /* sd contem apenas dados sobre familia e protocolo  */
@@ -59,5 +61,19 @@ int main(int argc, char *argv[]) {
       exit(1); }
     printf("Enviando parametro %d: %s\n", i-2, argv[i]);
   } /* fim do for (laco) */
+
+  /* inicia o buffer */
+    memset(msg,0x0,MAX_MSG);
+    tam_Cli = sizeof(ladoCli);
+    /* recebe a mensagem  */
+    n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoCli, &tam_Cli);
+    if(n<0) {
+      printf("%s: nao pode receber dados \n",argv[0]);
+      continue;} 
+      
+    /* imprime a mensagem recebida na tela do usuario */
+    printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServ.sin_addr), ntohs(ladoServ.sin_port));
+    printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCli.sin_addr), ntohs(ladoCli.sin_port), msg);
+
   return 1;
 } /* fim do programa */
