@@ -12,15 +12,25 @@
 #include <string.h> /* memset() */
 #include <stdlib.h>
 #include <sys/time.h>
+#include <signal.h>
 
 #include "Fila.h"
+int sd;
 
-#define MAX_MSG 100
+void end_exec(int sigint){
+    close(sd);
+    exit(0);
+}
 
 int main(int argc, char *argv[]) {
-  int sd, rc, i, n, tam_ServB, msgidAN, msgidANmin1;
+	signal(SIGINT, end_exec);
+  signal(SIGTSTP, end_exec);
+
+  int rc, i, n, tam_ServB, msgidAN, msgidANmin1;
   struct sockaddr_in ladoCliA;   /* dados do cliente local   */
   struct sockaddr_in ladoServB; 	/* dados do servidor remoto */
+	
+	int MAX_MSG = atoi(argv[1]);
 
   char   msg[MAX_MSG];/* Buffer que armazena os dados que chegaram via rede */
 
@@ -68,11 +78,10 @@ int main(int argc, char *argv[]) {
 	
 
 	while(1){
-		printf("loop");
+		printf("bigloop\n");
 		if(receber_arquivo(msgfila, msgidAN)!=-1){
-			printf("send%s\n", (*msgfila).mdata);	
+			printf("Send\n");
 			while(fileended==0) { //
-				printf("ing");
 				while(a!='\0'){
 					a = (*msgfila).mdata[j];
 					file[j%MAX_MSG]=(*msgfila).mdata[j];
@@ -88,7 +97,6 @@ int main(int argc, char *argv[]) {
 				}
 				//framefile //numero tambem(1,2,3,4 ...)
 				//sendframe
-				printf("%s",file);
 				while(1){
 					rc = sendto(sd, &file, strlen(file), 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
 					if(rc<0) {
@@ -98,7 +106,6 @@ int main(int argc, char *argv[]) {
 					}
 					//setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv));
 					n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
-					printf("%s", msg);
 					if(n!=-1 && msg[2]=='K'){
 						break;
 					}
@@ -110,18 +117,17 @@ int main(int argc, char *argv[]) {
 			fileended=0;
 		}
 		else{
+			printf("Rec\n");
 			k=0;
 			while(1){
-				printf("recfile\n");
+				printf("loopRec\n");
 				/* inicia o buffer */
 				memset(msg,0x0,MAX_MSG);
-				printf("recfile\n");
 				tam_ServB = sizeof(ladoServB);
 				/* recebe a mensagem  */
 				//setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv));
 				n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
 				if(n<0){
-					printf("zero");
 					break;
 				}
 				else if(n>0){

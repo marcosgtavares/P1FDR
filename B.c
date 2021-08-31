@@ -12,15 +12,27 @@
 #include <string.h> /* memset() */
 #include <stdlib.h>
 #include <sys/time.h>
+#include <signal.h>
+
 
 #include "Fila.h"
+int sd;
 
-#define MAX_MSG 100
+void end_exec(int sigint){
+    close(sd);
+    exit(0);
+}
+
 
 int main(int argc, char *argv[]) {
-  int sd, rc, i, n, tam_ServA, msgidBN, msgidBNmin1;
+	signal(SIGINT, end_exec);
+  signal(SIGTSTP, end_exec);
+
+  int rc, i, n, tam_ServA, msgidBN, msgidBNmin1;
   struct sockaddr_in ladoCliB;   /* dados do cliente local   */
   struct sockaddr_in ladoServA; 	/* dados do servidor remoto */
+	
+	int MAX_MSG = atoi(argv[1]);
   
   char   msg[MAX_MSG];/* Buffer que armazena os dados que chegaram via rede */
 
@@ -62,15 +74,15 @@ int main(int argc, char *argv[]) {
 	msgidBN=criar_fila(21);
 	msgidBNmin1=abrir_fila(23);
 	char file[100];
-	char a;
+	char a='1';
 	int j=0;
 	int k=0;
 	int fileended=0;
 
 	while(1){
-		printf("pass");
+		printf("bigloop\n");
 		if(receber_arquivo(msgfila, msgidBN)!=-1){
-			printf("send%s",(*msgfila).mdata);
+			printf("Send\n");
 			while(fileended==0) { //
 				while(a!='\0'){
 					a = (*msgfila).mdata[j];
@@ -89,13 +101,11 @@ int main(int argc, char *argv[]) {
 				while(1){
 					rc = sendto(sd, file, strlen(file), 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
 					if(rc<0) {
-						printf("%s: nao pode enviar dados %d \n",argv[0],i-1);
 						close(sd);
 						return 1; 
 					}
 					//setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv));
 					n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServA, &tam_ServA);
-					printf("%s", msg);
 					if(n!=-1 && msg[2]=='K'){
 						break;
 					}
@@ -107,15 +117,15 @@ int main(int argc, char *argv[]) {
 			fileended=0;
 		}
 		else{
+			printf("Rec\n");
 			k=0;
 			while(1){
-				printf("recv\n");
+				printf("loopRec\n");
 				/* inicia o buffer */
 				memset(msg,0x0,MAX_MSG);
 				tam_ServA = sizeof(ladoServA);
 				/* recebe a mensagem  */
 				//setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv));
-				printf("recv2\n");
 				n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServA, &tam_ServA);
 				if(n<0){
 					break;
@@ -123,7 +133,6 @@ int main(int argc, char *argv[]) {
 				else if(n>0){
 					rc = sendto(sd, "ACK", 3, 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
 				}
-				printf("%d\n", n);
 				mandar_arquivo(msg, msgidBNmin1);
 				
 				/*if(crc){
