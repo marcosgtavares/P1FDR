@@ -83,15 +83,15 @@ int main(int argc, char *argv[]) {
 	struct msgform *msgfila = (struct msgform*)malloc(sizeof(struct msgform)); 
 	msgidBN=criar_fila(21);
 	
-	char *file = (char*)malloc(sizeof(char)*MAX_MSG);
+	unsigned char *file = (unsigned char*)malloc(sizeof(char)*MAX_MSG);
 	char a='1';
 	int j=0;
 	int k=0;
 	int fileended=0;
 	int firsttime = 0;
 	struct pduframe actualframe, actualframe2;
-	actualframe.data=(char*)malloc(sizeof(char)*(MAX_MSG-7));
-	short crcfchk;
+	actualframe.data=(unsigned char*)malloc(sizeof(char)*(MAX_MSG-7));
+	unsigned char crcfchk[2];
 	int sz;
 
 	while(1){
@@ -134,8 +134,8 @@ int main(int argc, char *argv[]) {
 					}
 
 				}
-				actualframe.crc = calcula_CRC((unsigned char *)&actualframe, MAX_MSG-2);
-				*(file + 5 + actualframe.dsz + sz) = calcula_CRC((unsigned char *)&file, MAX_MSG-2);
+				actualframe.crc = calcula_CRC((unsigned char *)&file, MAX_MSG-2);
+				*(file + MAX_MSG-2) = calcula_CRC((unsigned char *)file, MAX_MSG-2);
 
 				//framefile //numero tambem(1,2,3,4 ...)
 				//sendframe
@@ -171,12 +171,12 @@ int main(int argc, char *argv[]) {
 				//setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv));
 				n = recvfrom(sd, file, MAX_MSG, 0, (struct sockaddr *) &ladoServA, &tam_ServA);
 
-				crcfchk = calcula_CRC((unsigned char *)file, MAX_MSG-2);
+				*crcfchk = calcula_CRC((unsigned char *)file, MAX_MSG-2);
 
 				if(n<0){
 					break;
 				}
-				else if(n>0 && (short)*(file + MAX_MSG-2)==crcfchk){
+				else if(n>0 && *(file + MAX_MSG-2)==*crcfchk){
 					rc = sendto(sd, "ACK", 3, 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
 					if(firsttime==0){
 						msgidBNmin1=abrir_fila(23);
@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
 
 				/* imprime a mensagem recebida na tela do usuario */
 				printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServA.sin_addr), ntohs(ladoServA.sin_port));
-				printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliB.sin_addr), ntohs(ladoCliB.sin_port), file);
+				printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliB.sin_addr), ntohs(ladoCliB.sin_port), file+5);
 			}
 		
 		}

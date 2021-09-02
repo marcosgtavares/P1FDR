@@ -79,15 +79,15 @@ int main(int argc, char *argv[]) {
 	struct msgform *msgfila = (struct msgform*)malloc(sizeof(struct msgform)); 
 	msgidAN=criar_fila(20);
 	
-	char *file = (char*)malloc(sizeof(char)*MAX_MSG);
+	unsigned char *file = (unsigned char*)malloc(sizeof(char)*MAX_MSG);
 	char a='1';
 	int j=0;
 	int k=0;
 	int fileended=0;
 	int firsttime=0;
-	struct pduframe actualframe, actualframe2;
-	actualframe.data=(char*)malloc(sizeof(char)*(MAX_MSG-7));
-	short crcfchk;
+	struct pduframe actualframe;
+	actualframe.data=(unsigned char*)malloc(sizeof(char)*(MAX_MSG-7));
+	unsigned char crcfchk[2];
 	short sz;
 
 	while(1){
@@ -130,8 +130,9 @@ int main(int argc, char *argv[]) {
 					}
 
 				}
-				actualframe.crc = calcula_CRC((unsigned char *)&actualframe, MAX_MSG-2);
-				*(file + 5 + actualframe.dsz + sz) = calcula_CRC((unsigned char *)&file, MAX_MSG-2);
+				actualframe.crc = calcula_CRC((unsigned char *)file, MAX_MSG-2);
+				*(file + MAX_MSG-2) = calcula_CRC((unsigned char *)file, MAX_MSG-2);
+
 
 				//framefile //numero tambem(1,2,3,4 ...)
 				//sendframe
@@ -167,13 +168,16 @@ int main(int argc, char *argv[]) {
 				/* recebe a mensagem  */
 				//setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv));
 				n = recvfrom(sd, file, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
+				for(int i=0;i<MAX_MSG-2;i++){
+					printf("%c", file[i+5]);
+				}
 				
-				crcfchk = calcula_CRC((unsigned char *)file, MAX_MSG-2);
+				*crcfchk = calcula_CRC((unsigned char *)file, MAX_MSG-2);
 
 				if(n<0){
 					break;
 				}
-				else if(n>0){
+				else if(n>0 && *(file + MAX_MSG-2)==*crcfchk){
 					rc = sendto(sd, "ACK", 3, 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
 					if(firsttime==0){
 						msgidANmin1=abrir_fila(22);
