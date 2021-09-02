@@ -15,5 +15,6 @@ int criar_fila(int MSGKEY);
 int abrir_fila(int MSGKEY);
 void mandar_arquivo(char *file, int msgid);
 int receber_arquivo(struct msgform *msg, int msgid);
+void killfila(int msgid);
 
 #endif

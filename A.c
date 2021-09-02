@@ -15,12 +15,21 @@
 #include <signal.h>
 
 #include "Fila.h"
+#include "crc16.h"
 int sd;
 
 void end_exec(int sigint){
     close(sd);
     exit(0);
 }
+
+struct pduframe{
+	char fm;
+	short cnt;
+	short dsz;
+	char *data;
+	short crc;
+};
 
 int main(int argc, char *argv[]) {
 	signal(SIGINT, end_exec);
@@ -65,17 +74,21 @@ int main(int argc, char *argv[]) {
   if(rc<0) {
     printf("%s: n�o pode fazer um bind da porta\n", argv[0]);
     exit(1); }
-  printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: 127.0.0.1, Porta_R: 5000}\n", inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port));
+  	printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: 127.0.0.1, Porta_R: 5000}\n", inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port));
 
 	struct msgform *msgfila = (struct msgform*)malloc(sizeof(struct msgform)); 
 	msgidAN=criar_fila(20);
-	msgidANmin1=abrir_fila(22);
-	char file[100];
+	
+	char *file = (char*)malloc(sizeof(char)*MAX_MSG);
 	char a='1';
 	int j=0;
 	int k=0;
 	int fileended=0;
-	
+	int firsttime=0;
+	struct pduframe actualframe, actualframe2;
+	actualframe.data=(char*)malloc(sizeof(char)*(MAX_MSG-7));
+	short crcfchk;
+	short sz;
 
 	while(1){
 		printf("bigloop\n");
@@ -84,10 +97,19 @@ int main(int argc, char *argv[]) {
 			while(fileended==0) { //
 				while(a!='\0'){
 					a = (*msgfila).mdata[j];
-					file[j%MAX_MSG]=(*msgfila).mdata[j];
+					file[5+j%(MAX_MSG-7)]=(*msgfila).mdata[j];
+					actualframe.data[j%(MAX_MSG-7)]=(*msgfila).mdata[j];
 					j++;
-					if(j%MAX_MSG==0 || a == '\0'){
+					if(j%(MAX_MSG-7)==0 || a == '\0'){
+						actualframe.fm = 'm';
+						file[0]='m';
 						k++;
+						if(k==1){
+							actualframe.fm = 'f';
+							file[0]='f';
+						}
+						actualframe.cnt=(short)k;
+						*(file + 1)=(short)k;
 						break;
 					}
 					
@@ -95,10 +117,27 @@ int main(int argc, char *argv[]) {
 				if(a=='\0'){
 					fileended=1;
 				}
+				actualframe.dsz = (short)strlen(actualframe.data);
+				*(file + 3)=(short)strlen(actualframe.data);
+
+				if(actualframe.dsz<(short)(MAX_MSG-7)){
+					sz = (short)(MAX_MSG-7) - actualframe.dsz;
+
+					for(int l=0; l<sz; l++){
+
+						(short)file[5+actualframe.dsz+l];
+						actualframe.data[actualframe.dsz+l]='\0';
+					}
+
+				}
+				actualframe.crc = calcula_CRC((unsigned char *)&actualframe, MAX_MSG-2);
+				*(file + 5 + actualframe.dsz + sz) = calcula_CRC((unsigned char *)&file, MAX_MSG-2);
+
 				//framefile //numero tambem(1,2,3,4 ...)
 				//sendframe
+				printf("%s", actualframe.data);
 				while(1){
-					rc = sendto(sd, &file, strlen(file), 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
+					rc = sendto(sd, file, MAX_MSG, 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
 					if(rc<0) {
 						printf("%s: nao pode enviar dados %d \n",argv[0],i-1);
 						close(sd);
@@ -112,28 +151,38 @@ int main(int argc, char *argv[]) {
 				}
 				
 			} /* fim do for (laco) */
+			k=0;
 			j=0;
 			a='1';
 			fileended=0;
 		}
 		else{
 			printf("Rec\n");
-			k=0;
+			k=0;  
 			while(1){
 				printf("loopRec\n");
 				/* inicia o buffer */
-				memset(msg,0x0,MAX_MSG);
+				memset(file,0x0,MAX_MSG);
 				tam_ServB = sizeof(ladoServB);
 				/* recebe a mensagem  */
 				//setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv));
-				n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
+				n = recvfrom(sd, file, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
+				
+				crcfchk = calcula_CRC((unsigned char *)file, MAX_MSG-2);
+
 				if(n<0){
 					break;
 				}
 				else if(n>0){
 					rc = sendto(sd, "ACK", 3, 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
+					if(firsttime==0){
+						msgidANmin1=abrir_fila(22);
+						firsttime=1;
+					}
+					
+					mandar_arquivo(file, msgidANmin1);
 				}
-				mandar_arquivo(msg, msgidANmin1);
+				
 
 				/*if(crc){
 					if(notreadyet){
@@ -153,7 +202,7 @@ int main(int argc, char *argv[]) {
 				
 				/* imprime a mensagem recebida na tela do usuario */
 				printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServB.sin_addr), ntohs(ladoServB.sin_port));
-				printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port), msg);
+				printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port), file);
 			}
 		
 		}

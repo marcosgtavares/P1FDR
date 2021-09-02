@@ -16,7 +16,17 @@
 
 
 #include "Fila.h"
+#include "crc16.h"
+
 int sd;
+
+struct pduframe{
+	char fm;
+	short cnt;
+	short dsz;
+	char *data;
+	short crc;
+};
 
 void end_exec(int sigint){
     close(sd);
@@ -72,12 +82,17 @@ int main(int argc, char *argv[]) {
 
 	struct msgform *msgfila = (struct msgform*)malloc(sizeof(struct msgform)); 
 	msgidBN=criar_fila(21);
-	msgidBNmin1=abrir_fila(23);
-	char file[100];
+	
+	char *file = (char*)malloc(sizeof(char)*MAX_MSG);
 	char a='1';
 	int j=0;
 	int k=0;
 	int fileended=0;
+	int firsttime = 0;
+	struct pduframe actualframe, actualframe2;
+	actualframe.data=(char*)malloc(sizeof(char)*(MAX_MSG-7));
+	short crcfchk;
+	int sz;
 
 	while(1){
 		printf("bigloop\n");
@@ -86,20 +101,47 @@ int main(int argc, char *argv[]) {
 			while(fileended==0) { //
 				while(a!='\0'){
 					a = (*msgfila).mdata[j];
-					file[j%MAX_MSG]=(*msgfila).mdata[j];
+					file[5+j%(MAX_MSG-7)]=(*msgfila).mdata[j];
+					actualframe.data[j%(MAX_MSG-7)]=(*msgfila).mdata[j];
 					j++;
-					if(j%MAX_MSG==0 || a == '\0'){
+					if(j%(MAX_MSG-7)==0 || a == '\0'){
+						actualframe.fm = 'm';
+						file[0]='m';
 						k++;
+						if(k==1){
+							actualframe.fm = 'f';
+							file[0]='f';
+						}
+						actualframe.cnt=(short)k;
+						*(file + 1)=(short)k;
 						break;
 					}
+					
 				}
 				if(a=='\0'){
 					fileended=1;
 				}
+				actualframe.dsz = (short)strlen(actualframe.data);
+				*(file + 3)=(short)strlen(actualframe.data);
+
+				if(actualframe.dsz<(short)(MAX_MSG-7)){
+					sz = (short)(MAX_MSG-7) - actualframe.dsz;
+
+					for(int l=0; l<sz; l++){
+
+						(short)file[5+actualframe.dsz+l];
+						actualframe.data[actualframe.dsz+l]='\0';
+					}
+
+				}
+				actualframe.crc = calcula_CRC((unsigned char *)&actualframe, MAX_MSG-2);
+				*(file + 5 + actualframe.dsz + sz) = calcula_CRC((unsigned char *)&file, MAX_MSG-2);
+
 				//framefile //numero tambem(1,2,3,4 ...)
 				//sendframe
+				printf("%s", actualframe.data);
 				while(1){
-					rc = sendto(sd, file, strlen(file), 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
+					rc = sendto(sd, file, MAX_MSG, 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
 					if(rc<0) {
 						close(sd);
 						return 1; 
@@ -112,6 +154,7 @@ int main(int argc, char *argv[]) {
 				}
 				
 			} /* fim do for (laco) */
+			k=0;
 			j=0;
 			a='1';
 			fileended=0;
@@ -122,18 +165,27 @@ int main(int argc, char *argv[]) {
 			while(1){
 				printf("loopRec\n");
 				/* inicia o buffer */
-				memset(msg,0x0,MAX_MSG);
+				memset(file,0x0,MAX_MSG);
 				tam_ServA = sizeof(ladoServA);
 				/* recebe a mensagem  */
 				//setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv));
-				n = recvfrom(sd, msg, MAX_MSG, 0, (struct sockaddr *) &ladoServA, &tam_ServA);
+				n = recvfrom(sd, file, MAX_MSG, 0, (struct sockaddr *) &ladoServA, &tam_ServA);
+
+				crcfchk = calcula_CRC((unsigned char *)file, MAX_MSG-2);
+
 				if(n<0){
 					break;
 				}
-				else if(n>0){
+				else if(n>0 && (short)*(file + MAX_MSG-2)==crcfchk){
 					rc = sendto(sd, "ACK", 3, 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
+					if(firsttime==0){
+						msgidBNmin1=abrir_fila(23);
+						firsttime=1;
+					}
+					
+					mandar_arquivo(file, msgidBNmin1);
 				}
-				mandar_arquivo(msg, msgidBNmin1);
+				
 				
 				/*if(crc){
 					if(notreadyet){
@@ -153,7 +205,7 @@ int main(int argc, char *argv[]) {
 
 				/* imprime a mensagem recebida na tela do usuario */
 				printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServA.sin_addr), ntohs(ladoServA.sin_port));
-				printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliB.sin_addr), ntohs(ladoCliB.sin_port), msg);
+				printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliB.sin_addr), ntohs(ladoCliB.sin_port), file);
 			}
 		
 		}

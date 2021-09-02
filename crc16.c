@@ -1,4 +1,4 @@
-#include "../inc/crc16.h"
+#include "crc16.h"
 /*
  * crc16.c
  *

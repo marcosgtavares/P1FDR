@@ -36,3 +36,7 @@ int receber_arquivo(struct msgform *msg, int msgid){
     return msgrcv(msgid, msg, MSG_SIZEMAX,2, IPC_NOWAIT);
     
 }
+
+void killfila(int msgid){
+    msgctl(msgid, IPC_RMID, NULL);
+}
