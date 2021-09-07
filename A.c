@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 	struct pduframe actualframe;
 	actualframe.data=(unsigned char*)malloc(sizeof(char)*(MAX_MSG-7));
 	unsigned char crcfchk[2];
-	short sz;
+	int sz;
 
 	while(1){
 		printf("bigloop\n");
@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
 
 					for(int l=0; l<sz; l++){
 
-						(short)file[5+actualframe.dsz+l];
+						file[5+actualframe.dsz+l]='\0';
 						actualframe.data[actualframe.dsz+l]='\0';
 					}
 

@@ -18,7 +18,7 @@ int abrir_fila(int MSGKEY){
     return msgget(MSGKEY, 0); 
 }
 
-void mandar_arquivo(char *file, int msgid){
+void mandar_arquivo(unsigned char *file, int msgid){
     struct msgform msg;
 
     msg.pid = getpid();

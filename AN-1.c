@@ -1,5 +1,6 @@
 //REF:https://www.dca.ufrn.br/~adelardo/cursos/DCA409/node117.html
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include "Fila.h"
 #include <sys/time.h>
@@ -7,46 +8,38 @@
 
 int msgidAN,msgidANmin1;
 
+struct msgform *msg;
+
+
 void end_exec(int sigint){
 	killfila(msgidAN);
 	killfila(msgidANmin1);
     exit(0);
 }
 
+void receive_f(int siglrm){
+	alarm(1);
+	if(receber_arquivo(msg, msgidANmin1)!=-1){
+		printf("Pacote recebido:%s\n", (msg->mdata + 5));
+	}
+}
+
 int main(int argc, char *argv[]) {
 	signal(SIGINT, end_exec);
   	signal(SIGTSTP, end_exec);
+	signal(SIGALRM, receive_f);
 
-	struct msgform *msg = (struct msgform*)malloc(sizeof(struct msgform));    
-	char mensagem[4900];
-
-	struct timeval tv;
-	fd_set fds;
-	int fdstdin = fileno(stdin);
-	tv.tv_sec = 1;
-  	tv.tv_usec = 0;
-	FD_ZERO(&fds);
-	FD_SET(fileno(stdin), &fds);
-	fflush(stdout);
-	select(fdstdin+1, &fds, NULL, NULL, &tv);
+	msg = (struct msgform*)malloc(sizeof(struct msgform));    
+	char mensagem[4092];
 
 	msgidAN = abrir_fila(20);
 	msgidANmin1 = criar_fila(22);
-
+	alarm(1);
 	while(1){
-		if(receber_arquivo(msg, msgidANmin1)!=-1){
-			printf("Arquivo recebido:%s\n", (*msg).mdata);
-		}
-		else{
-			scanf("%s", mensagem);
-			printf("\n");
-			mandar_arquivo(mensagem, msgidAN);
-		}
-		
+		scanf("%s", mensagem);
+		printf("\n");
+		mandar_arquivo(mensagem, msgidAN);
 	}
 	
-	
-
-
 	return 0;
 }

@@ -93,10 +93,13 @@ int main(int argc, char *argv[]) {
 	actualframe.data=(unsigned char*)malloc(sizeof(char)*(MAX_MSG-7));
 	unsigned char crcfchk[2];
 	int sz;
+	int b;
 
 	while(1){
 		printf("bigloop\n");
-		if(receber_arquivo(msgfila, msgidBN)!=-1){
+		b = receber_arquivo(msgfila, msgidBN);
+		printf("%d", b);
+		if(b!=-1){
 			printf("Send\n");
 			while(fileended==0) { //
 				while(a!='\0'){
@@ -129,7 +132,7 @@ int main(int argc, char *argv[]) {
 
 					for(int l=0; l<sz; l++){
 
-						(short)file[5+actualframe.dsz+l];
+						file[5+actualframe.dsz+l]='\0';
 						actualframe.data[actualframe.dsz+l]='\0';
 					}
 
