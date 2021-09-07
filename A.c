@@ -33,48 +33,50 @@ struct pduframe{
 
 int main(int argc, char *argv[]) {
 	signal(SIGINT, end_exec);
-  signal(SIGTSTP, end_exec);
+	signal(SIGTSTP, end_exec);
 
-  int rc, i, n, tam_ServB, msgidAN, msgidANmin1;
-  struct sockaddr_in ladoCliA;   /* dados do cliente local   */
-  struct sockaddr_in ladoServB; 	/* dados do servidor remoto */
+	int rc, i, n, tam_ServB, msgidAN, msgidANmin1;
+	struct sockaddr_in ladoCliA;   /* dados do cliente local   */
+	struct sockaddr_in ladoServB; 	/* dados do servidor remoto */
 	
 	int MAX_MSG = atoi(argv[1]);
 
-  char   msg[MAX_MSG];/* Buffer que armazena os dados que chegaram via rede */
+  	char   msg[MAX_MSG];/* Buffer que armazena os dados que chegaram via rede */
 
-/* confere o numero de argumentos passados para o programa */
+	/* confere o numero de argumentos passados para o programa */
 
-/* Preenchendo as informacoes de identificacao do remoto */
-  ladoServB.sin_family 	   = AF_INET;
-  ladoServB.sin_addr.s_addr = inet_addr("0.0.0.0");
-  ladoServB.sin_port 	     = htons(5000);
+	/* Preenchendo as informacoes de identificacao do remoto */
+	ladoServB.sin_family 	   = AF_INET;
+	ladoServB.sin_addr.s_addr = inet_addr("0.0.0.0");
+	ladoServB.sin_port 	     = htons(5000);
 
-/* Preenchendo as informacoes de identificacao do cliente */
-  ladoCliA.sin_family 	     = AF_INET;
-  ladoCliA.sin_addr.s_addr  = inet_addr("0.0.0.0");  
-  ladoCliA.sin_port 	       = htons(4000); 
+	/* Preenchendo as informacoes de identificacao do cliente */
+	ladoCliA.sin_family 	     = AF_INET;
+	ladoCliA.sin_addr.s_addr  = inet_addr("0.0.0.0");  
+	ladoCliA.sin_port 	       = htons(4000); 
 
-/* Criando um socket. Nesse momento a variavel       */
-/* sd contem apenas dados sobre familia e protocolo  */
+	/* Criando um socket. Nesse momento a variavel       */
+	/* sd contem apenas dados sobre familia e protocolo  */
 
-  sd = socket(AF_INET,SOCK_DGRAM,0);
-  if(sd<0) {
-    printf("%s: n�o pode abrir o socket \n",argv[0]);
-    exit(1); }
+	sd = socket(AF_INET,SOCK_DGRAM,0);
+	if(sd<0) {
+		printf("%s: n�o pode abrir o socket \n",argv[0]);
+		exit(1); 
+	}
 
-/* Relacionando o socket sd com a estrutura ladoCliA /*
-/* Depois do bind, sd faz referencia a protocolo local, ip local e porta local */
+	/* Relacionando o socket sd com a estrutura ladoCliA /*
+	/* Depois do bind, sd faz referencia a protocolo local, ip local e porta local */
 	struct timeval tv;
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
 	setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,(char *)&tv,sizeof(tv));
 
-  rc = bind(sd, (struct sockaddr *) &ladoCliA, sizeof(ladoCliA));
-  if(rc<0) {
-    printf("%s: n�o pode fazer um bind da porta\n", argv[0]);
-    exit(1); }
-  	printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: 127.0.0.1, Porta_R: 5000}\n", inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port));
+  	rc = bind(sd, (struct sockaddr *) &ladoCliA, sizeof(ladoCliA));
+  	if(rc<0) {
+		printf("%s: n�o pode fazer um bind da porta\n", argv[0]);
+		exit(1); 
+	}
+  	printf("{UDP, IP_Cli: %s, Porta_Cli: %u, IP_R: 0.0.0.0, Porta_R: 5000}\n", inet_ntoa(ladoCliA.sin_addr), ntohs(ladoCliA.sin_port));
 
 	struct msgform *msgfila = (struct msgform*)malloc(sizeof(struct msgform)); 
 	msgidAN=criar_fila(20);
@@ -207,7 +209,7 @@ int main(int argc, char *argv[]) {
 					}
 					if(found!=1){
 						recyet[m]=(short)*(file + 1);
-						mandar_arquivo(file, msgidANmin1);
+						mandar_arquivo(file, msgidANmin1, MAX_MSG);
 						m++;
 					}
 					else{
@@ -234,7 +236,7 @@ int main(int argc, char *argv[]) {
 
 				
 				
-				printf("Pacote recebido: %s", file+5);
+				printf("Quadro recebido: %s", file+5);
 			}
 		
 		}

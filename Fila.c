@@ -18,14 +18,15 @@ int abrir_fila(int MSGKEY){
     return msgget(MSGKEY, 0); 
 }
 
-void mandar_arquivo(unsigned char *file, int msgid){
+void mandar_arquivo(unsigned char *file, int msgid, int sofile){
     struct msgform msg;
+    short fsz;
+    fsz = (short)*(file +3);
 
-    msg.pid = getpid();
 	msg.mtype = 2;
-    strcpy(msg.mdata, file);
-
-    printf("Arquivo enviado: %s",msg.mdata);
+    for(int i = 0;i<sofile; i++){
+        msg.mdata[i]=file[i];
+    }
 
     if (msgsnd(msgid, &msg, MSG_SIZEMAX, 0) == -1) {
         printf("Erro no envio da mensagem") ;
