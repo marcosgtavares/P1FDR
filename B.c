@@ -93,13 +93,16 @@ int main(int argc, char *argv[]) {
 	actualframe.data=(unsigned char*)malloc(sizeof(char)*(MAX_MSG-7));
 	unsigned char crcfchk[2];
 	int sz;
-	int b;
+	short recyet[100];
+	int found=0;
+	int m=0;
+	for(int i=0;i<100;i++){
+		recyet[i]=0;
+	}
 
 	while(1){
 		printf("bigloop\n");
-		b = receber_arquivo(msgfila, msgidBN);
-		printf("%d", b);
-		if(b!=-1){
+		if(receber_arquivo(msgfila, msgidBN)!=-1){
 			printf("Send\n");
 			while(fileended==0) { //
 				while(a!='\0'){
@@ -128,7 +131,7 @@ int main(int argc, char *argv[]) {
 				*(file + 3)=(short)strlen(actualframe.data);
 
 				if(actualframe.dsz<(short)(MAX_MSG-7)){
-					sz = (short)(MAX_MSG-7) - actualframe.dsz;
+					sz = (MAX_MSG-7) - (int)actualframe.dsz;
 
 					for(int l=0; l<sz; l++){
 
@@ -185,8 +188,31 @@ int main(int argc, char *argv[]) {
 						msgidBNmin1=abrir_fila(23);
 						firsttime=1;
 					}
+					if(file[0]=='f'){
+						for(int i=0;i<100;i++){
+							recyet[i]=0;
+						}
+						m=0;
+					}
+					for(int i=0; i<100; i++){
+						if((short)*(file + 1)==recyet[i]){
+							found = 1;
+							break;
+						}
+						if(recyet[i]==0){
+							break;
+						}
+					}
+					if(found!=1){
+						recyet[m]=(short)*(file + 1);
+						mandar_arquivo(file, msgidBNmin1);
+						m++;
+					}
+					else{
+						found=0;
+					}
 					
-					mandar_arquivo(file, msgidBNmin1);
+					
 				}
 				
 				
@@ -207,8 +233,7 @@ int main(int argc, char *argv[]) {
 				
 
 				/* imprime a mensagem recebida na tela do usuario */
-				printf("{UDP, IP_L: %s, Porta_L: %u", inet_ntoa(ladoServA.sin_addr), ntohs(ladoServA.sin_port));
-				printf(" IP_R: %s, Porta_R: %u} => %s\n",inet_ntoa(ladoCliB.sin_addr), ntohs(ladoCliB.sin_port), file+5);
+				printf("Pacote recebido:%s", file+5);
 			}
 		
 		}
