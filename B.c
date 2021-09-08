@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <time.h>
+
 
 
 #include "Fila.h"
@@ -33,6 +35,13 @@ void end_exec(int sigint){
     exit(0);
 }
 
+int sim_err(int odd){
+	srand(time(NULL));
+	if (rand()%odd == odd-1){
+		return 1;
+	}
+	return 0;
+}
 
 int main(int argc, char *argv[]) {
 	signal(SIGINT, end_exec);
@@ -103,9 +112,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	while(1){
-		printf("bigloop\n");
 		if(receber_arquivo(msgfila, msgidBN)!=-1){
-			printf("Send\n");
 			while(fileended==0) { //
 				while(a!='\0'){
 					a = (*msgfila).mdata[j];
@@ -144,12 +151,27 @@ int main(int argc, char *argv[]) {
 				}
 				actualframe.crc = calcula_CRC((unsigned char *)&file, MAX_MSG-2);
 				*(file + MAX_MSG-2) = calcula_CRC((unsigned char *)file, MAX_MSG-2);
+				
+				
 
 				//framefile //numero tambem(1,2,3,4 ...)
 				//sendframe
-				printf("%s", actualframe.data);
 				while(1){
-					rc = sendto(sd, file, MAX_MSG, 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
+					if(sim_err(3)==1){
+						printf("\nCRC ERR\n");
+						*(file + MAX_MSG-2)=(short)222;
+					}
+					else{
+						*(file + MAX_MSG-2) = calcula_CRC((unsigned char *)file, MAX_MSG-2);
+					}
+
+					if(sim_err(3)==0){
+						rc = sendto(sd, file, MAX_MSG, 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
+					}
+					else{
+						printf("\nSENDDATA ERR\n");
+					}
+				
 					if(rc<0) {
 						close(sd);
 						return 1; 
@@ -168,10 +190,8 @@ int main(int argc, char *argv[]) {
 			fileended=0;
 		}
 		else{
-			printf("Rec\n");
 			k=0;
 			while(1){
-				printf("loopRec\n");
 				/* inicia o buffer */
 				memset(file,0x0,MAX_MSG);
 				tam_ServA = sizeof(ladoServA);
@@ -185,7 +205,13 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				else if(n>0 && *(file + MAX_MSG-2)==*crcfchk){
-					rc = sendto(sd, "ACK", 3, 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
+					if(sim_err(3)==0){
+						rc = sendto(sd, "ACK", 3, 0,(struct sockaddr *) &ladoServA, sizeof(ladoServA));
+					}
+					else{
+						printf("\nACK ERR\n");
+					}
+					
 					if(firsttime==0){
 						msgidBNmin1=abrir_fila(23);
 						firsttime=1;
@@ -234,8 +260,7 @@ int main(int argc, char *argv[]) {
 				
 				
 
-				/* imprime a mensagem recebida na tela do usuario */
-				printf("Quadro recebido:%s", file+5);
+				
 			}
 		
 		}

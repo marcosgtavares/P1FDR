@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <time.h>
+
 
 #include "Fila.h"
 #include "crc16.h"
@@ -30,6 +32,14 @@ struct pduframe{
 	char *data;
 	short crc;
 };
+
+int sim_err(int odd){
+	srand(time(NULL));
+	if (rand()%odd == odd-1){
+		return 1;
+	}
+	return 0;
+}
 
 int main(int argc, char *argv[]) {
 	signal(SIGINT, end_exec);
@@ -99,9 +109,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	while(1){
-		printf("bigloop\n");
 		if(receber_arquivo(msgfila, msgidAN)!=-1){
-			printf("Send\n");
 			while(fileended==0) { //
 				while(a!='\0'){
 					a = (*msgfila).mdata[j];
@@ -144,9 +152,21 @@ int main(int argc, char *argv[]) {
 
 				//framefile //numero tambem(1,2,3,4 ...)
 				//sendframe
-				printf("%s", actualframe.data);
 				while(1){
-					rc = sendto(sd, file, MAX_MSG, 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
+					if(sim_err(3)==1){
+						printf("\nCRC ERR\n");
+						*(file + MAX_MSG-2)=(short)222;
+					}
+					else{
+						*(file + MAX_MSG-2) = calcula_CRC((unsigned char *)file, MAX_MSG-2);
+					}
+					if(sim_err(3)==0){
+						rc = sendto(sd, file, MAX_MSG, 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
+					}
+					else{
+						printf("\nSENDDATA ERR\n");
+					}
+
 					if(rc<0) {
 						printf("%s: nao pode enviar dados %d \n",argv[0],i-1);
 						close(sd);
@@ -166,19 +186,14 @@ int main(int argc, char *argv[]) {
 			fileended=0;
 		}
 		else{
-			printf("Rec\n");
 			k=0;  
 			while(1){
-				printf("loopRec\n");
 				/* inicia o buffer */
 				memset(file,0x0,MAX_MSG);
 				tam_ServB = sizeof(ladoServB);
 				/* recebe a mensagem  */
 				//setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv));
 				n = recvfrom(sd, file, MAX_MSG, 0, (struct sockaddr *) &ladoServB, &tam_ServB);
-				for(int i=0;i<MAX_MSG-2;i++){
-					printf("%c", file[i+5]);
-				}
 				
 				*crcfchk = calcula_CRC((unsigned char *)file, MAX_MSG-2);
 
@@ -186,7 +201,13 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				else if(n>0 && *(file + MAX_MSG-2)==*crcfchk){
-					rc = sendto(sd, "ACK", 3, 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
+					if(sim_err(3)==0){
+						rc = sendto(sd, "ACK", 3, 0,(struct sockaddr *) &ladoServB, sizeof(ladoServB));
+					}
+					else{
+						printf("\nACK ERR\n");
+					}
+					
 					if(firsttime==0){
 						msgidANmin1=abrir_fila(22);
 						firsttime=1;
@@ -236,7 +257,6 @@ int main(int argc, char *argv[]) {
 
 				
 				
-				printf("Quadro recebido: %s", file+5);
 			}
 		
 		}
